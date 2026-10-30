@@ -37,3 +37,31 @@ The schedule is inferred backward from maturity using regular fixed coupon amoun
 ACT/ACT ICMA uses reference coupon periods; ACT/365F and ACT/360 use actual days with fixed denominators; 30E/360 caps each date's day at 30. The selected convention controls both accrual and discount times. This explicit model may differ from security-specific market quoting conventions. Macaulay duration uses these discount times; modified duration and convexity are analytic derivatives of this model.
 
 `P = Σ CF × (1 + y/f)^(-f×t)`. Dirty = clean + accrued. Dollar duration is positive `P × modified duration` per unit yield; DV01 is that magnitude × 0.0001. Convexity uses `Σ[t(t+1/f)PV] / [P(1+y/f)^2]`. YTM inversion uses Brent's method in log-compounding-factor space. Contractual cash flows assume full payment and do not include reinvestment income.
+
+## Terminal 2.0 analytical workspaces
+
+Select an **Advanced workspace** in the sidebar. The validated `Bond` engine and
+its original tests are retained. New capabilities include:
+
+- Exact vectorized benchmark/spread risk surfaces, synchronized heatmaps, a
+  selected-scenario marker, adjustable ranges/resolution, contours, CSV data and
+  interactive HTML export. Duration/convexity surfaces use hypothetical bonds
+  with regenerated valid maturity-anchored schedules.
+- Editable continuously compounded spot curves, node-specific shocks, forward
+  rates, and symmetric-bump key rate durations. Par-rate bootstrapping is not implied.
+- Editable long-only portfolios, CSV import/export, explicit dated/source-labeled
+  manual FX inputs, market-value weights, additive DV01, comparison curves and
+  exact aggregated risk surfaces. Input yields already include credit spreads.
+- Hypothetical global sovereign comparison and France spread/maturity stress.
+- Reinvestment-rate scenarios, maturity wealth and effective annual holding returns.
+- 24 currency labels, configurable headline metrics and educational explanations.
+
+The model remains **regular fixed-rate bullet bonds**, including a zero coupon
+by setting coupon to zero. Expanded contractual coupon structures, stub periods,
+holiday adjustment, arbitrary frequencies, Excel import/export, portfolio short
+positions and live data are not implemented. Sovereign examples use shared model
+conventions, not country-specific security conventions. Imported portfolios must
+use the exported CSV column schema. FX assumptions export separately; re-enter
+these explicitly when loading holdings. Cross-currency yield spreads are not pure
+credit spreads. Model YTM discounting and continuous-spot-curve discounting are
+separate analyses and need not produce the same valuation.

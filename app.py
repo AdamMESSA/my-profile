@@ -13,7 +13,7 @@ from fixed_income.charts import style, cashflow_chart, MINT, BLUE
 
 st.set_page_config(page_title='FI / Bond Terminal', page_icon='◈', layout='wide')
 st.markdown('''<style>
-.block-container {padding-top:2rem; max-width:1600px}
+.stApp {background:#101318;color:#e5e7eb} [data-testid="stSidebar"] {background:#181c23} .block-container {padding-top:2rem; max-width:1800px} button[kind="primary"] {background:#f39132}
 [data-testid="stSidebar"] {border-right:1px solid #253149}
 h1 {font-size:2.35rem!important; letter-spacing:-1.3px}
 h3 {font-size:1.15rem!important}
@@ -26,10 +26,10 @@ h3 {font-size:1.15rem!important}
 
 with st.sidebar:
     st.markdown('## ◈ FIXED INCOME')
-    st.caption('ANALYTICS TERMINAL / 01')
+    st.caption('ANALYTICS TERMINAL / 02')
     st.divider()
     st.markdown('### Instrument parameters')
-    currency = st.selectbox('Currency', ['EUR', 'USD', 'GBP'])
+    currency = st.selectbox('Currency', 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SGD INR BRL MXN ZAR KRW AED SAR'.split())
     face = st.number_input('Face value', min_value=1.0, max_value=1e12, value=1000.0, step=100.0)
     coupon = st.number_input('Annual coupon rate (%)', 0.0, 100.0, 4.0, .125)
     ytm = st.number_input('Annualized YTM (%)', -50.0, 100.0, 3.5, .05)
@@ -53,7 +53,7 @@ with st.sidebar:
 st.markdown('<div class="eyebrow">FI / ANALYTICS WORKSPACE</div>', unsafe_allow_html=True)
 header, badge = st.columns([4,1])
 with header:
-    st.title('Bond valuation terminal')
+    st.title('Fixed income analytics terminal')
     st.caption('Dated cash flows. Transparent pricing. Measurable rate risk.')
 with badge:
     st.markdown('**◈ FIXED-RATE BULLET**')
@@ -72,11 +72,22 @@ except (ValueError, OverflowError) as exc:
 
 money = lambda x: f'{currency} {x:,.2f}'
 st.markdown(f'<div class="banner">{currency} &nbsp; / &nbsp; {coupon:.3f}% COUPON &nbsp; / &nbsp; MATURITY {maturity:%d %b %Y} &nbsp; / &nbsp; {frequency} PAYMENTS PER YEAR &nbsp; / &nbsp; {convention}</div>', unsafe_allow_html=True)
-a,b,c,d = st.columns(4)
-a.metric('CLEAN PRICE · MODEL', money(result['clean']))
-b.metric('DIRTY PRICE · SETTLEMENT', money(result['dirty']))
-c.metric('IMPLIED MARKET YTM', f'{implied*100:.4f}%')
-d.metric('DV01 · MODEL', f'{currency} {result["dv01"]:,.4f}')
+metrics = {
+    'Clean price': (money(result['clean']), 'Dirty price minus accrued interest; currency amount.'),
+    'Dirty price': (money(result['dirty']), 'Sum of discounted future contractual cash flows; currency amount.'),
+    'Market YTM': (f'{implied*100:.4f}%', 'Nominal annual yield solving model dirty price = market dirty price.'),
+    'DV01': (f'{currency} {result["dv01"]:,.4f}', 'Dirty price × modified duration × 0.0001; positive magnitude of first-order value change per bp.'),
+    'Modified duration': (f'{result["modified"]:.4f} yr', 'Macaulay duration / (1 + yield/frequency); first-order proportional sensitivity.'),
+    'Convexity': (f'{result["convexity"]:.4f} yr²', 'Second yield derivative divided by dirty price; curvature of the price–yield relationship.'),
+    'Accrued interest': (money(result['accrued']), 'Face × annual coupon × elapsed day-count fraction since the prior coupon.'),
+    'Remaining coupon income': (money(result['flows']['Coupon'].sum()), 'Undiscounted sum of remaining coupons; excludes reinvestment.'),
+    'Redemption value': (money(face), 'Principal repaid at maturity under the bullet bond contract.'),
+    'Remaining maturity': (f'{(maturity-settlement).days/365.25:.3f} yr', 'Calendar days to maturity divided by 365.25; informational, not discount time.')}
+selected_metrics = st.sidebar.multiselect('Dashboard metrics', list(metrics), default=['Clean price','Dirty price','Market YTM','DV01'])
+for offset in range(0,len(selected_metrics),4):
+    for col,name in zip(st.columns(4),selected_metrics[offset:offset+4]):
+        value,help_text=metrics[name]
+        col.metric(name,value,help=help_text)
 st.caption(f'Model yield: {ytm:.3f}% nominal annual, compounded {frequency}× yearly. Prices are total currency amounts; model clean quote per 100 face: {result["clean"]/face*100:.4f}.')
 
 valuation, risk, ledger, methodology = st.tabs(['VALUATION', 'RATE RISK', 'CASH-FLOW LEDGER', 'METHODOLOGY'])
@@ -148,3 +159,6 @@ Settlement on a payment date excludes that payment and resets accrued interest t
     st.info('Analytical valuation from manual inputs. No live quotes or credit/option adjustments are included.')
 st.divider()
 st.caption('FI / BOND TERMINAL     •     DATED CASH-FLOW ENGINE     •     MANUAL MARKET INPUTS')
+
+from fixed_income.workspaces import advanced
+advanced(bond, ytm/100, currency, result)
