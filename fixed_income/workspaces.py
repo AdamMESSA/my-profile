@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from fixed_income.analytics import price_grid, risk_surface, curve_price, portfolio_values
 from fixed_income.bonds import Bond
-from fixed_income.charts import mesh_surface
+from fixed_income.charts import mesh_surface, RISK_SCALE
 
 CURRENCIES = 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SGD INR BRL MXN ZAR KRW AED SAR'.split()
 
@@ -59,8 +59,9 @@ def surface_panel(bond, model_yield, currency):
         pz = selected if mode=='Dirty price' else (selected/base-1)*100 if mode=='Price change (%)' else (selected-base)*quantity
         point=(sx,sy,pz); xlabel='Benchmark shock (bp)'; ylabel='Spread shock (bp)'
     fig = mesh_surface(x, y, z, xlabel, ylabel, mode)
+    st.caption('Scenario nodes S1–S9 sample the displayed grid. Dotted guides project values onto the floor; highlighted lines show central axis slices, not forecasts over time.')
     if point:
-        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#ffffff',line=dict(color='#111827',width=3)),name='Selected scenario'))
+        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#f1ba73',line=dict(color='#101318',width=2)),name='Selected scenario'))
     if controls.button('Reset surface camera'):
         st.session_state['surface_camera_revision'] = st.session_state.get('surface_camera_revision', 0) + 1
     fig.update_layout(uirevision=f"{mode}-{st.session_state.get('surface_camera_revision', 0)}")
@@ -71,7 +72,7 @@ def surface_panel(bond, model_yield, currency):
     c.metric('POSITION P/L', f'{currency} {(selected-base)*quantity:+,.2f}')
     st.download_button('Export interactive surface HTML',fig.to_html(include_plotlyjs=True),'bond_risk_surface.html','text/html')
     contours = st.checkbox('Show heatmap contours',value=True)
-    heat = go.Figure(go.Heatmap(x=x,y=y,z=z,colorscale='Turbo',colorbar=dict(title=mode)))
+    heat = go.Figure(go.Heatmap(x=x,y=y,z=z,colorscale=RISK_SCALE,colorbar=dict(title=mode)))
     if contours:
         heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(coloring='none',showlabels=True),line=dict(color='white',width=1)))
         if np.min(z)<0<np.max(z) and mode in ['Price change (%)','Position profit/loss']:
@@ -155,7 +156,7 @@ def portfolio_panel(bond, ytm, currency):
         z+=(risk_surface(p['_bond'],base_y,0,x,y)-base)*scale
         selected+=(float(price_grid(p['_bond'],base_y+(shock+spread)/10000))-base)*scale
     st.metric('PORTFOLIO SCENARIO P/L',f'{reporting} {selected:+,.2f}')
-    fig=go.Figure(go.Surface(x=x,y=y,z=z,colorscale='Turbo'))
+    fig=mesh_surface(x,y,z,'Benchmark shock (bp)','Spread shock (bp)',f'P/L ({reporting})')
     fig.update_layout(scene=dict(xaxis_title='Benchmark shock (bp)',yaxis_title='Spread shock (bp)',zaxis_title=f'P/L ({reporting})'))
     plot(fig,'Portfolio / exact risk surface')
 
@@ -222,6 +223,6 @@ def sovereign_panel(bond):
     fig=go.Figure(go.Heatmap(x=shocks,y=terms,z=z,colorscale='RdYlGn',colorbar=dict(title='Change %')))
     fig.update_layout(xaxis_title='OAT spread widening (bp)',yaxis_title='Hypothetical maturity (years)')
     plot(fig,'France / exact spread stress heatmap')
-    fig=go.Figure(go.Surface(x=shocks,y=terms,z=z,colorscale='Turbo'))
+    fig=mesh_surface(shocks,terms,z,'OAT widening (bp)','Maturity (years)','Price change (%)')
     fig.update_layout(scene=dict(xaxis_title='OAT widening (bp)',yaxis_title='Maturity (years)',zaxis_title='Price change (%)'))
     plot(fig,'OAT spread / maturity surface')
