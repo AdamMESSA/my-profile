@@ -14,8 +14,8 @@ CURRENCIES = 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SG
 
 
 def plot(fig, title):
-    fig.update_layout(template='plotly_dark', title=title, paper_bgcolor='#293747',
-                      plot_bgcolor='#293747', font=dict(color='#e0e8f1'), height=550, margin=dict(l=20,r=20,t=60,b=30))
+    fig.update_layout(template='plotly_white', title=title, paper_bgcolor='#ffffff',
+                      plot_bgcolor='#ffffff', font=dict(color='#334155'), height=550, margin=dict(l=20,r=20,t=60,b=30))
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -61,7 +61,7 @@ def surface_panel(bond, model_yield, currency):
     fig = mesh_surface(x, y, z, xlabel, ylabel, mode)
     st.caption('Scenario nodes S1–S9 sample the displayed grid. Dotted guides project values onto the floor; highlighted lines show central axis slices, not forecasts over time.')
     if point:
-        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#f1ba73',line=dict(color='#293747',width=2)),name='Selected scenario'))
+        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#7c3aed',line=dict(color='#ffffff',width=2)),name='Selected scenario'))
     if controls.button('Reset surface camera'):
         st.session_state['surface_camera_revision'] = st.session_state.get('surface_camera_revision', 0) + 1
     fig.update_layout(uirevision=f"{mode}-{st.session_state.get('surface_camera_revision', 0)}")
@@ -74,9 +74,9 @@ def surface_panel(bond, model_yield, currency):
     contours = st.checkbox('Show heatmap contours',value=True)
     heat = go.Figure(go.Heatmap(x=x,y=y,z=z,colorscale=RISK_SCALE,colorbar=dict(title=mode)))
     if contours:
-        heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(coloring='none',showlabels=True),line=dict(color='white',width=1)))
+        heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(coloring='none',showlabels=True),line=dict(color='#64748b',width=1)))
         if np.min(z)<0<np.max(z) and mode in ['Price change (%)','Position profit/loss']:
-            heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(start=0,end=0,size=1,coloring='none'),line=dict(color='orange',width=3)))
+            heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(start=0,end=0,size=1,coloring='none'),line=dict(color='#7c3aed',width=3)))
     heat.update_layout(xaxis_title=xlabel,yaxis_title=ylabel)
     plot(heat,'Synchronized scenario heatmap')
     xx,yy=np.meshgrid(x,y)
