@@ -90,6 +90,9 @@ for offset in range(0,len(selected_metrics),4):
         col.metric(name,value,help=help_text)
 st.caption(f'Model yield: {ytm:.3f}% nominal annual, compounded {frequency}× yearly. Prices are total currency amounts; model clean quote per 100 face: {result["clean"]/face*100:.4f}.')
 
+from fixed_income.workspaces import advanced
+advanced(bond, ytm/100, currency, result)
+
 valuation, risk, ledger, methodology = st.tabs(['VALUATION', 'RATE RISK', 'CASH-FLOW LEDGER', 'METHODOLOGY'])
 with valuation:
     left, right = st.columns([1.6,1])
@@ -159,6 +162,3 @@ Settlement on a payment date excludes that payment and resets accrued interest t
     st.info('Analytical valuation from manual inputs. No live quotes or credit/option adjustments are included.')
 st.divider()
 st.caption('FI / BOND TERMINAL     •     DATED CASH-FLOW ENGINE     •     MANUAL MARKET INPUTS')
-
-from fixed_income.workspaces import advanced
-advanced(bond, ytm/100, currency, result)

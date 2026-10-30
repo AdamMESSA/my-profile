@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from fixed_income.analytics import price_grid, risk_surface, curve_price, portfolio_values
 from fixed_income.bonds import Bond
+from fixed_income.charts import mesh_surface
 
 CURRENCIES = 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SGD INR BRL MXN ZAR KRW AED SAR'.split()
 
@@ -26,32 +27,29 @@ def cached_surface(bond, benchmark, spread, x, y):
 def surface_panel(bond, model_yield, currency):
     st.subheader('3D / Exact risk surface')
     st.caption('Deterministic fixed-rate bullet cash flows · nominal yield = benchmark + credit spread. This additive spread model is not an option-adjusted or default model.')
-    a,b,c = st.sidebar.columns(3)
+    controls = st.sidebar.expander('3D surface controls', expanded=True)
+    a = b = c = controls
     benchmark = a.number_input('Initial benchmark yield (%)', value=float(model_yield*100), step=.05)/100
     spread = b.number_input('Initial credit spread (bp)', value=0.0, step=5.0)/10000
     quantity = c.number_input('Position quantity', min_value=.01, value=1.0)
-    mode = st.sidebar.selectbox('Surface measure', ['Dirty price','Price change (%)','Position profit/loss','Modified duration','Convexity'])
-    a,b,c = st.columns(3)
+    mode = controls.selectbox('Surface measure', ['Dirty price','Price change (%)','Position profit/loss','Modified duration','Convexity'])
+    a = b = c = controls
     xr = a.slider('Benchmark shock range (bp)', -1000,1000,(-200,200),25)
     yr = b.slider('Spread shock range (bp)', -1000,1000,(-100,300),25)
     resolution = c.select_slider('Surface grid resolution', [15,25,41,61,81], value=41)
     if xr[0] == xr[1] or yr[0] == yr[1]:
         st.warning('Choose ranges with distinct endpoints.'); return
     x = np.linspace(*xr,resolution); y = np.linspace(*yr,resolution)
-    a,b = st.columns(2)
+    a = b = controls
     sx = a.slider('Selected benchmark shock (bp)', xr[0],xr[1],max(xr[0],min(0,xr[1])))
     sy = b.slider('Selected spread shock (bp)', yr[0],yr[1],max(yr[0],min(0,yr[1])))
     base = float(price_grid(bond, benchmark+spread))
     prices = cached_surface(bond,benchmark,spread,x,y)
     selected = float(price_grid(bond, benchmark+spread+(sx+sy)/10000))
-    a,b,c = st.columns(3)
-    a.metric('SELECTED DIRTY PRICE', f'{currency} {selected:,.2f}')
-    b.metric('SELECTED CHANGE', f'{(selected/base-1)*100:+.3f}%')
-    c.metric('POSITION P/L', f'{currency} {(selected-base)*quantity:+,.2f}')
     if mode in ['Modified duration','Convexity']:
         st.caption('Hypothetical regular bonds: identical face, coupon, settlement and frequency; maturity varies in calendar days. Selected shock marker applies only to shock surfaces.')
         x = np.linspace(max(-.5,benchmark+spread-.03),benchmark+spread+.05,resolution)
-        years = st.slider('Hypothetical maturity range (years)',1,50,(1,30))
+        years = controls.slider('Hypothetical maturity range (years)',1,50,(1,30))
         y = np.linspace(*years,resolution)
         key = 'modified' if mode == 'Modified duration' else 'convexity'
         z = np.array([[replace(bond,maturity=bond.settlement+timedelta(days=round(t*365.25))).value(float(v))[key] for v in x] for t in y])
@@ -60,12 +58,17 @@ def surface_panel(bond, model_yield, currency):
         z = prices if mode=='Dirty price' else (prices/base-1)*100 if mode=='Price change (%)' else (prices-base)*quantity
         pz = selected if mode=='Dirty price' else (selected/base-1)*100 if mode=='Price change (%)' else (selected-base)*quantity
         point=(sx,sy,pz); xlabel='Benchmark shock (bp)'; ylabel='Spread shock (bp)'
-    fig = go.Figure(go.Surface(x=x,y=y,z=z,colorscale='Turbo',colorbar=dict(title=mode),hovertemplate=f'{xlabel}: %{{x:.2f}}<br>{ylabel}: %{{y:.2f}}<br>{mode}: %{{z:.5f}}<extra></extra>'))
+    fig = mesh_surface(x, y, z, xlabel, ylabel, mode)
     if point:
-        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#ff9b36',line=dict(color='white',width=2)),name='Selected scenario'))
-    camera = st.button('Reset surface camera')
-    fig.update_layout(scene=dict(xaxis_title=xlabel,yaxis_title=ylabel,zaxis_title=mode),uirevision=None if camera else mode)
-    plot(fig,'Exact discounted cash-flow risk surface')
+        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#ffffff',line=dict(color='#111827',width=3)),name='Selected scenario'))
+    if controls.button('Reset surface camera'):
+        st.session_state['surface_camera_revision'] = st.session_state.get('surface_camera_revision', 0) + 1
+    fig.update_layout(uirevision=f"{mode}-{st.session_state.get('surface_camera_revision', 0)}")
+    st.plotly_chart(fig, use_container_width=True, config={'displaylogo':False, 'scrollZoom':True}, key='hero_risk_surface')
+    a,b,c = st.columns(3)
+    a.metric('SELECTED DIRTY PRICE', f'{currency} {selected:,.2f}')
+    b.metric('SELECTED CHANGE', f'{(selected/base-1)*100:+.3f}%')
+    c.metric('POSITION P/L', f'{currency} {(selected-base)*quantity:+,.2f}')
     st.download_button('Export interactive surface HTML',fig.to_html(include_plotlyjs=True),'bond_risk_surface.html','text/html')
     contours = st.checkbox('Show heatmap contours',value=True)
     heat = go.Figure(go.Heatmap(x=x,y=y,z=z,colorscale='Turbo',colorbar=dict(title=mode)))
@@ -178,7 +181,6 @@ def reinvestment_panel(bond,ytm,result,currency):
 
 def advanced(bond,ytm,currency,result):
     st.divider()
-    st.markdown('## FI / Advanced analytics')
     workspace=st.sidebar.selectbox('Advanced workspace',['3D risk simulator','Spot curves & key rate risk','Portfolio & comparison','Reinvestment','Sovereign relative value'])
     education=st.sidebar.checkbox('Educational mode',value=False)
     if education:
