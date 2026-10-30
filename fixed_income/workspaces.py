@@ -14,8 +14,8 @@ CURRENCIES = 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SG
 
 
 def plot(fig, title):
-    fig.update_layout(template='plotly_dark', title=title, paper_bgcolor='#101318',
-                      plot_bgcolor='#101318', height=550, margin=dict(l=20,r=20,t=60,b=30))
+    fig.update_layout(template='plotly_dark', title=title, paper_bgcolor='#293747',
+                      plot_bgcolor='#293747', font=dict(color='#e0e8f1'), height=550, margin=dict(l=20,r=20,t=60,b=30))
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -61,7 +61,7 @@ def surface_panel(bond, model_yield, currency):
     fig = mesh_surface(x, y, z, xlabel, ylabel, mode)
     st.caption('Scenario nodes S1–S9 sample the displayed grid. Dotted guides project values onto the floor; highlighted lines show central axis slices, not forecasts over time.')
     if point:
-        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#f1ba73',line=dict(color='#101318',width=2)),name='Selected scenario'))
+        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#f1ba73',line=dict(color='#293747',width=2)),name='Selected scenario'))
     if controls.button('Reset surface camera'):
         st.session_state['surface_camera_revision'] = st.session_state.get('surface_camera_revision', 0) + 1
     fig.update_layout(uirevision=f"{mode}-{st.session_state.get('surface_camera_revision', 0)}")

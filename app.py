@@ -13,15 +13,15 @@ from fixed_income.charts import style, cashflow_chart, MINT, BLUE
 
 st.set_page_config(page_title='FI / Bond Terminal', page_icon='◈', layout='wide')
 st.markdown('''<style>
-.stApp {background:#101318;color:#e5e7eb} [data-testid="stSidebar"] {background:#181c23} .block-container {padding-top:2rem; max-width:1800px} button[kind="primary"] {background:#f39132}
-[data-testid="stSidebar"] {border-right:1px solid #253149}
+.stApp {background:#293747;color:#f1f5f9} [data-testid="stSidebar"] {background:#324255} .block-container {padding-top:2rem; max-width:1800px} button[kind="primary"] {background:#f39132}
+[data-testid="stSidebar"] {border-right:1px solid #4c6178}
 h1 {font-size:2.35rem!important; letter-spacing:-1.3px}
 h3 {font-size:1.15rem!important}
-[data-testid="stMetric"] {background:#111b2a;border:1px solid #26334a;border-radius:8px;padding:18px}
-[data-testid="stMetricLabel"] {color:#9aacc4;font-size:12px;letter-spacing:.6px}
+[data-testid="stMetric"] {background:#35485c;border:1px solid #536a81;border-radius:8px;padding:18px}
+[data-testid="stMetricLabel"] {color:#c3d2e1;font-size:12px;letter-spacing:.6px}
 [data-testid="stMetricValue"] {font-family:monospace;font-size:1.65rem}
-.eyebrow {color:#48dfb5;font:12px monospace;letter-spacing:2px;margin-bottom:12px}
-.banner {border-top:1px solid #26334a;border-bottom:1px solid #26334a;padding:12px 0;color:#aab9ce;font:12px monospace;margin:20px 0}
+.eyebrow {color:#80d8cf;font:12px monospace;letter-spacing:2px;margin-bottom:12px}
+.banner {border-top:1px solid #536a81;border-bottom:1px solid #536a81;padding:12px 0;color:#cfdae6;font:12px monospace;margin:20px 0}
 </style>''', unsafe_allow_html=True)
 
 with st.sidebar:

@@ -11,11 +11,11 @@ def style(fig, title, yaxis):
                       template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
                       plot_bgcolor='rgba(0,0,0,0)', height=380,
                       margin=dict(l=20, r=20, t=55, b=25),
-                      font=dict(color='#aab9ce'), yaxis_title=yaxis,
+                      font=dict(color='#d0dce8'), yaxis_title=yaxis,
                       legend=dict(orientation='h', y=1.14),
                       hovermode='x unified')
     fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(gridcolor='#202d40', zerolinecolor='#33425b')
+    fig.update_yaxes(gridcolor='#4d6278', zerolinecolor='#71869b')
     return fig
 
 
@@ -28,7 +28,7 @@ def cashflow_chart(flows):
 
 
 def mesh_surface(x, y, z, xlabel, ylabel, measure):
-    """Dark analytical scene with valuation mesh, scenario nodes and projections."""
+    """Slate analytical scene with valuation mesh, scenario nodes and projections."""
     import numpy as np
     x, y, z = np.asarray(x), np.asarray(y), np.asarray(z)
     fig = go.Figure(go.Surface(
@@ -43,7 +43,7 @@ def mesh_surface(x, y, z, xlabel, ylabel, measure):
         wx.extend([*x, None]); wy.extend([*np.repeat(y[j],len(x)), None]); wz.extend([*z[j], None])
     for i in sorted(set(range(0,len(x),stride)) | {len(x)-1}):
         wx.extend([*np.repeat(x[i],len(y)), None]); wy.extend([*y, None]); wz.extend([*z[:,i], None])
-    fig.add_trace(go.Scatter3d(x=wx,y=wy,z=wz,mode='lines',line=dict(color='rgba(118,159,183,0.23)',width=1),hoverinfo='skip',showlegend=False))
+    fig.add_trace(go.Scatter3d(x=wx,y=wy,z=wz,mode='lines',line=dict(color='rgba(166,194,211,0.32)',width=1),hoverinfo='skip',showlegend=False))
     # Nine sampled scenarios and their floor projections expose the dimensions
     # without inventing market observations or an implied path through time.
     rows = sorted({0, len(y)//2, len(y)-1})
@@ -54,11 +54,11 @@ def mesh_surface(x, y, z, xlabel, ylabel, measure):
     for nx, ny, nz in nodes:
         px.extend([nx,nx,None]); py.extend([ny,ny,None]); pz.extend([floor,nz,None])
     fig.add_trace(go.Scatter3d(x=px,y=py,z=pz,mode='lines',
-        line=dict(color='rgba(139,165,192,0.4)',width=2,dash='dot'),
+        line=dict(color='rgba(191,211,228,0.55)',width=2,dash='dot'),
         hoverinfo='skip',showlegend=False))
     fig.add_trace(go.Scatter3d(x=[p[0] for p in nodes],y=[p[1] for p in nodes],z=[p[2] for p in nodes],
         mode='markers+text',text=[f'S{i+1}' for i in range(len(nodes))],textposition='top center',
-        textfont=dict(size=11,color='#b8c8da'),
+        textfont=dict(size=11,color='#edf2f7'),
         marker=dict(size=5,color=[p[2] for p in nodes],colorscale=RISK_SCALE,
                     cmin=float(z.min()),cmax=float(z.max()),line=dict(color='#d2e2ed',width=1)),
         name='Sampled scenarios',
@@ -71,16 +71,16 @@ def mesh_surface(x, y, z, xlabel, ylabel, measure):
             line=dict(color=['#64c4c2','#c6a779'][i],width=4),
             name=['Benchmark slice','Spread slice'][i] if 'shock' in xlabel.lower() else ['X-axis slice','Y-axis slice'][i],
             hoverinfo='skip'))
-    axis=dict(showbackground=True,backgroundcolor='#111922',gridcolor='#263342',
-              zerolinecolor='#425568',color='#b4c2d2',showspikes=False,
-              showline=True,linecolor='#425568',tickfont=dict(size=11))
+    axis=dict(showbackground=True,backgroundcolor='#2e3e50',gridcolor='#4d6278',
+              zerolinecolor='#71869b',color='#e0e8f1',showspikes=False,
+              showline=True,linecolor='#71869b',tickfont=dict(size=11))
     fig.update_layout(
-        template='plotly_dark', paper_bgcolor='#101318', height=820,
-        title=dict(text='SCENARIO SPACE / EXACT VALUATION',font=dict(size=17,color='#c3d3e3')),
+        template='plotly_dark', paper_bgcolor='#293747', font=dict(color='#e0e8f1'), height=820,
+        title=dict(text='SCENARIO SPACE / EXACT VALUATION',font=dict(size=17,color='#f1f5f9')),
         margin=dict(l=5,r=15,t=45,b=5),
-        scene=dict(bgcolor='#101318',xaxis=dict(axis,title=xlabel), yaxis=dict(axis,title=ylabel),
+        scene=dict(bgcolor='#293747',xaxis=dict(axis,title=xlabel), yaxis=dict(axis,title=ylabel),
                    zaxis=dict(axis,title=measure,range=[floor,float(z.max())+max(float(np.ptp(z))*.08,.01)]),
                    camera=dict(eye=dict(x=1.65,y=1.65,z=1.15),projection=dict(type='orthographic')),
                    aspectmode='manual',aspectratio=dict(x=1.3,y=1.3,z=.85)),
-        legend=dict(x=0,y=1,orientation='h',font=dict(size=11,color='#9baec3'),bgcolor='rgba(0,0,0,0)'))
+        legend=dict(x=0,y=1,orientation='h',font=dict(size=11,color='#d0dce8'),bgcolor='rgba(0,0,0,0)'))
     return fig
