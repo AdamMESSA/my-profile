@@ -1,21 +1,21 @@
 """Plot styling shared by the terminal's analytics views."""
 import plotly.graph_objects as go
 
-MINT = '#0284c7'
-BLUE = '#2563eb'
-RISK_SCALE = [[0, '#eff6ff'], [.25, '#bfdbfe'], [.5, '#60a5fa'], [.75, '#2563eb'], [1, '#163b80']]
+MINT = '#ff4da6'
+BLUE = '#00bfff'
+RISK_SCALE = [[0, '#122445'], [.25, '#0076c8'], [.5, '#00bfff'], [.75, '#9862df'], [1, '#ff4da6']]
 
 
 def style(fig, title, yaxis):
     fig.update_layout(title=dict(text=title, font=dict(size=17)),
-                      template='plotly_white', paper_bgcolor='rgba(0,0,0,0)',
+                      template='plotly_dark', colorway=[BLUE,MINT,'#9c83ff','#65d8ed'], paper_bgcolor='rgba(0,0,0,0)',
                       plot_bgcolor='rgba(0,0,0,0)', height=380,
                       margin=dict(l=20, r=20, t=55, b=25),
-                      font=dict(color='#475569'), yaxis_title=yaxis,
+                      font=dict(color='#b1bad0'), yaxis_title=yaxis,
                       legend=dict(orientation='h', y=1.14),
                       hovermode='x unified')
     fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(gridcolor='#dbe5f1', zerolinecolor='#94a3b8')
+    fig.update_yaxes(gridcolor='#27273b', zerolinecolor='#52526c')
     return fig
 
 
@@ -28,7 +28,7 @@ def cashflow_chart(flows):
 
 
 def mesh_surface(x, y, z, xlabel, ylabel, measure):
-    """Light analytical scene with valuation mesh, scenario nodes and projections."""
+    """Black analytical scene with valuation mesh, scenario nodes and projections."""
     import numpy as np
     x, y, z = np.asarray(x), np.asarray(y), np.asarray(z)
     fig = go.Figure(go.Surface(
@@ -43,7 +43,7 @@ def mesh_surface(x, y, z, xlabel, ylabel, measure):
         wx.extend([*x, None]); wy.extend([*np.repeat(y[j],len(x)), None]); wz.extend([*z[j], None])
     for i in sorted(set(range(0,len(x),stride)) | {len(x)-1}):
         wx.extend([*np.repeat(x[i],len(y)), None]); wy.extend([*y, None]); wz.extend([*z[:,i], None])
-    fig.add_trace(go.Scatter3d(x=wx,y=wy,z=wz,mode='lines',line=dict(color='rgba(30,64,125,0.28)',width=1),hoverinfo='skip',showlegend=False))
+    fig.add_trace(go.Scatter3d(x=wx,y=wy,z=wz,mode='lines',line=dict(color='rgba(110,159,210,0.28)',width=1),hoverinfo='skip',showlegend=False))
     # Nine sampled scenarios and their floor projections expose the dimensions
     # without inventing market observations or an implied path through time.
     rows = sorted({0, len(y)//2, len(y)-1})
@@ -54,13 +54,13 @@ def mesh_surface(x, y, z, xlabel, ylabel, measure):
     for nx, ny, nz in nodes:
         px.extend([nx,nx,None]); py.extend([ny,ny,None]); pz.extend([floor,nz,None])
     fig.add_trace(go.Scatter3d(x=px,y=py,z=pz,mode='lines',
-        line=dict(color='rgba(71,85,105,0.5)',width=2,dash='dot'),
+        line=dict(color='rgba(163,155,195,0.5)',width=2,dash='dot'),
         hoverinfo='skip',showlegend=False))
     fig.add_trace(go.Scatter3d(x=[p[0] for p in nodes],y=[p[1] for p in nodes],z=[p[2] for p in nodes],
         mode='markers+text',text=[f'S{i+1}' for i in range(len(nodes))],textposition='top center',
-        textfont=dict(size=11,color='#334155'),
+        textfont=dict(size=11,color='#c8d2e9'),
         marker=dict(size=5,color=[p[2] for p in nodes],colorscale=RISK_SCALE,
-                    cmin=float(z.min()),cmax=float(z.max()),line=dict(color='#ffffff',width=1)),
+                    cmin=float(z.min()),cmax=float(z.max()),line=dict(color='#050509',width=1)),
         name='Sampled scenarios',
         hovertemplate=f'%{{text}}<br>{xlabel}: %{{x:.2f}}<br>{ylabel}: %{{y:.2f}}<br>{measure}: %{{z:.5f}}<extra></extra>'))
     # Highlight two orthogonal slices of the same calculated surface.
@@ -68,19 +68,19 @@ def mesh_surface(x, y, z, xlabel, ylabel, measure):
         (x, np.repeat(y[len(y)//2],len(x)), z[len(y)//2]),
         (np.repeat(x[len(x)//2],len(y)), y, z[:,len(x)//2])]):
         fig.add_trace(go.Scatter3d(x=cx,y=cy,z=cz,mode='lines',
-            line=dict(color=['#075985','#7c3aed'][i],width=4),
+            line=dict(color=['#00bfff','#ff4da6'][i],width=4),
             name=['Benchmark slice','Spread slice'][i] if 'shock' in xlabel.lower() else ['X-axis slice','Y-axis slice'][i],
             hoverinfo='skip'))
-    axis=dict(showbackground=True,backgroundcolor='#f8fbff',gridcolor='#dbe5f1',
-              zerolinecolor='#94a3b8',color='#334155',showspikes=False,
-              showline=True,linecolor='#94a3b8',tickfont=dict(size=11))
+    axis=dict(showbackground=True,backgroundcolor='#0c0c16',gridcolor='#27273b',
+              zerolinecolor='#52526c',color='#c8d2e9',showspikes=False,
+              showline=True,linecolor='#52526c',tickfont=dict(size=11))
     fig.update_layout(
-        template='plotly_white', paper_bgcolor='#ffffff', font=dict(color='#334155'), height=820,
-        title=dict(text='SCENARIO SPACE / EXACT VALUATION',font=dict(size=17,color='#172b4d')),
+        template='plotly_dark', colorway=[BLUE,MINT,'#9c83ff','#65d8ed'], paper_bgcolor='#050509', font=dict(color='#c8d2e9'), height=820,
+        title=dict(text='SCENARIO SPACE / EXACT VALUATION',font=dict(size=17,color='#edf2ff')),
         margin=dict(l=5,r=15,t=45,b=5),
-        scene=dict(bgcolor='#ffffff',xaxis=dict(axis,title=xlabel), yaxis=dict(axis,title=ylabel),
+        scene=dict(bgcolor='#050509',xaxis=dict(axis,title=xlabel), yaxis=dict(axis,title=ylabel),
                    zaxis=dict(axis,title=measure,range=[floor,float(z.max())+max(float(np.ptp(z))*.08,.01)]),
                    camera=dict(eye=dict(x=1.65,y=1.65,z=1.15),projection=dict(type='orthographic')),
                    aspectmode='manual',aspectratio=dict(x=1.3,y=1.3,z=.85)),
-        legend=dict(x=0,y=1,orientation='h',font=dict(size=11,color='#475569'),bgcolor='rgba(0,0,0,0)'))
+        legend=dict(x=0,y=1,orientation='h',font=dict(size=11,color='#b1bad0'),bgcolor='rgba(0,0,0,0)'))
     return fig

@@ -13,15 +13,22 @@ from fixed_income.charts import style, cashflow_chart, MINT, BLUE
 
 st.set_page_config(page_title='FI / Bond Terminal', page_icon='◈', layout='wide')
 st.markdown('''<style>
-.stApp {background:#ffffff;color:#172b4d} [data-testid="stSidebar"] {background:#f5f8fd} .block-container {padding-top:2rem; max-width:1800px} button[kind="primary"] {background:#2563eb;color:white}
-[data-testid="stSidebar"] {border-right:1px solid #dbe5f1}
+.stApp {background:#050509;color:#edf2ff} [data-testid="stSidebar"] {background:#0b0b13} .block-container {padding-top:2rem; max-width:1800px} button[kind="primary"] {background:#00bfff;color:#050509}
+[data-testid="stSidebar"] {border-right:1px solid #28283c}
 h1 {font-size:2.35rem!important; letter-spacing:-1.3px}
 h3 {font-size:1.15rem!important}
-[data-testid="stMetric"] {background:#f8fbff;border:1px solid #dbe5f1;border-radius:8px;padding:18px}
-[data-testid="stMetricLabel"] {color:#526782;font-size:12px;letter-spacing:.6px}
-[data-testid="stMetricValue"] {color:#1d4ed8;font-family:monospace;font-size:1.65rem}
-.eyebrow {color:#2563eb;font:12px monospace;letter-spacing:2px;margin-bottom:12px}
-.banner {border-top:1px solid #dbe5f1;border-bottom:1px solid #dbe5f1;padding:12px 0;color:#526782;font:12px monospace;margin:20px 0}
+[data-testid="stMetric"] {background:#10101b;border:1px solid #28283c;border-radius:8px;padding:18px}
+[data-testid="stMetricLabel"] {color:#a9b2ca;font-size:12px;letter-spacing:.6px}
+[data-testid="stMetricValue"] {color:#00bfff;font-family:monospace;font-size:1.65rem}
+.eyebrow {color:#ff4da6;font:12px monospace;letter-spacing:2px;margin-bottom:12px}
+.banner {border-top:1px solid #28283c;border-bottom:1px solid #28283c;padding:12px 0;color:#a9b2ca;font:12px monospace;margin:20px 0}
+[data-testid="stMetric"] {border-top:2px solid #00bfff}
+[data-testid="stMetric"]:hover {border-color:#ff4da6}
+button[kind="secondary"] {border-color:#35354d}
+button[kind="secondary"]:hover {border-color:#ff4da6;color:#ff4da6}
+button[role="tab"][aria-selected="true"] {color:#ff4da6}
+a {color:#00bfff}
+a:hover {color:#ff4da6}
 </style>''', unsafe_allow_html=True)
 
 with st.sidebar:
@@ -129,7 +136,7 @@ with risk:
     fig = go.Figure()
     fig.add_scatter(x=yields*100, y=prices, name='Exact repricing', line=dict(color=MINT,width=3))
     fig.add_scatter(x=yields*100, y=result['dirty']*(1-result['modified']*shifts/10000+.5*result['convexity']*(shifts/10000)**2), name='Duration + convexity', line=dict(color=BLUE,dash='dot'))
-    fig.add_scatter(x=[ytm], y=[result['dirty']], name='Model yield', mode='markers', marker=dict(color='#ffbc69',size=11))
+    fig.add_scatter(x=[ytm], y=[result['dirty']], name='Model yield', mode='markers', marker=dict(color='#ff4da6',size=11))
     fig.update_xaxes(title='Nominal annual YTM (%)')
     st.plotly_chart(style(fig,'Price–yield sensitivity',f'Dirty price ({currency})'),use_container_width=True)
     shocks = np.array([-200,-100,-50,-1,0,1,50,100,200])
