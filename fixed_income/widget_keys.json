@@ -1,0 +1,107 @@
+{
+  "input:Dashboard metrics": {
+    "kind": "multiselect"
+  },
+  "input:Currency": {
+    "kind": "selectbox"
+  },
+  "input:Face value": {
+    "kind": "number_input"
+  },
+  "input:Annual coupon rate (%)": {
+    "kind": "number_input"
+  },
+  "input:Annualized YTM (%)": {
+    "kind": "number_input"
+  },
+  "input:Coupon frequency": {
+    "kind": "selectbox"
+  },
+  "input:Settlement date": {
+    "kind": "date_input"
+  },
+  "input:Maturity input": {
+    "kind": "radio"
+  },
+  "input:Day-count convention": {
+    "kind": "selectbox"
+  },
+  "input:Bond purchase / market price": {
+    "kind": "number_input"
+  },
+  "input:Market price basis": {
+    "kind": "radio"
+  },
+  "input:Parallel yield shock (basis points)": {
+    "kind": "slider"
+  },
+  "input:Maturity date": {
+    "kind": "date_input"
+  },
+  "input:Years to maturity (365.25 days/year)": {
+    "kind": "number_input"
+  },
+  "input:Position quantity": {
+    "kind": "number_input"
+  },
+  "input:Surface measure": {
+    "kind": "selectbox"
+  },
+  "input:Benchmark shock range (bp)": {
+    "kind": "slider"
+  },
+  "input:Spread shock range (bp)": {
+    "kind": "slider"
+  },
+  "input:Surface grid resolution": {
+    "kind": "select_slider"
+  },
+  "input:Selected benchmark shock (bp)": {
+    "kind": "slider"
+  },
+  "input:Selected spread shock (bp)": {
+    "kind": "slider"
+  },
+  "input:Show heatmap contours": {
+    "kind": "checkbox"
+  },
+  "input:Reporting currency": {
+    "kind": "selectbox"
+  },
+  "input:FX valuation date": {
+    "kind": "date_input"
+  },
+  "input:FX source / description": {
+    "kind": "text_input"
+  },
+  "input:Portfolio benchmark shock (bp)": {
+    "kind": "slider"
+  },
+  "input:Portfolio spread shock (bp)": {
+    "kind": "slider"
+  },
+  "navigation": {
+    "kind": "radio"
+  },
+  "input:Educational mode": {
+    "kind": "checkbox"
+  },
+  "input:Sovereign comparison maturity (years)": {
+    "kind": "slider"
+  },
+  "input:Initial benchmark yield (%)": {
+    "kind": "number_input"
+  },
+  "input:Initial credit spread (bp)": {
+    "kind": "number_input"
+  },
+  "input:Hypothetical maturity range (years)": {
+    "kind": "slider"
+  },
+  "input:Annual effective reinvestment rate (%)": {
+    "kind": "slider"
+  },
+  "input:Scenario scope": {
+    "kind": "radio"
+  }
+}
