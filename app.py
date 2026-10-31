@@ -10,6 +10,7 @@ import streamlit as st
 
 from fixed_income.bonds import Bond, CONVENTIONS
 from fixed_income.charts import style, cashflow_chart, MINT, BLUE
+from fixed_income.workspace_state import widget, workspace_controls, workspace_download
 
 st.set_page_config(page_title='FI / Bond Terminal', page_icon='◈', layout='wide')
 st.markdown('''<style>
@@ -50,30 +51,30 @@ a {color:#55c6fa}
 a:hover {color:#fc734d}
 </style>''', unsafe_allow_html=True)
 
+workspace_controls()
+
 with st.sidebar:
-    st.markdown('## ◈ FIXED INCOME')
-    st.caption('ANALYTICS TERMINAL / 02')
     st.divider()
     st.markdown('### Instrument parameters')
-    currency = st.selectbox('Currency', 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SGD INR BRL MXN ZAR KRW AED SAR'.split())
-    face = st.number_input('Face value', min_value=1.0, max_value=1e12, value=1000.0, step=100.0)
-    coupon = st.number_input('Annual coupon rate (%)', 0.0, 100.0, 4.0, .125)
-    ytm = st.number_input('Annualized YTM (%)', -50.0, 100.0, 3.5, .05)
-    frequency = st.selectbox('Coupon frequency', [2, 1, 4], format_func=lambda f: {1:'Annual', 2:'Semiannual',4:'Quarterly'}[f])
+    currency = widget('selectbox', 'Currency', 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SGD INR BRL MXN ZAR KRW AED SAR'.split(), key='input:Currency')
+    face = widget('number_input', 'Face value', min_value=1.0, max_value=1e12, value=1000.0, step=100.0, key='input:Face value')
+    coupon = widget('number_input', 'Annual coupon rate (%)', 0.0, 100.0, 4.0, .125, key='input:Annual coupon rate (%)')
+    ytm = widget('number_input', 'Annualized YTM (%)', -50.0, 100.0, 3.5, .05, key='input:Annualized YTM (%)')
+    frequency = widget('selectbox', 'Coupon frequency', [2, 1, 4], format_func=lambda f: {1:'Annual', 2:'Semiannual',4:'Quarterly'}[f], key='input:Coupon frequency')
     today = datetime.now(ZoneInfo('Europe/Paris')).date()
-    settlement = st.date_input('Settlement date', today, min_value=date(1900,1,1), max_value=date(2200,1,1))
-    mode = st.radio('Maturity input', ['Date', 'Years remaining'], horizontal=True)
+    settlement = widget('date_input', 'Settlement date', today, min_value=date(1900,1,1), max_value=date(2200,1,1), key='input:Settlement date')
+    mode = widget('radio', 'Maturity input', ['Date', 'Years remaining'], horizontal=True, key='input:Maturity input')
     if mode == 'Date':
-        maturity = st.date_input('Maturity date', settlement.replace(year=settlement.year+10) if not (settlement.month == 2 and settlement.day == 29) else settlement + timedelta(days=3652), min_value=date(1900,1,1), max_value=date(2300,1,1))
+        maturity = widget('date_input', 'Maturity date', settlement.replace(year=settlement.year+10) if not (settlement.month == 2 and settlement.day == 29) else settlement + timedelta(days=3652), min_value=date(1900,1,1), max_value=date(2300,1,1), key='input:Maturity date')
     else:
-        years = st.number_input('Years to maturity (365.25 days/year)', .01, 99.0, 10.0, .25)
+        years = widget('number_input', 'Years to maturity (365.25 days/year)', .01, 99.0, 10.0, .25, key='input:Years to maturity (365.25 days/year)')
         maturity = settlement + timedelta(days=round(years*365.25))
         st.caption(f'Derived maturity: {maturity:%d %b %Y}')
-    convention = st.selectbox('Day-count convention', CONVENTIONS)
+    convention = widget('selectbox', 'Day-count convention', CONVENTIONS, key='input:Day-count convention')
     st.divider()
     st.markdown('### Market quote')
-    purchase = st.number_input('Bond purchase / market price', min_value=.01, max_value=1e14, value=1020.0, step=1.0, help='Total currency amount for the entire face value, not a quote per 100.')
-    price_type = st.radio('Market price basis', ['Clean', 'Dirty'], horizontal=True)
+    purchase = widget('number_input', 'Bond purchase / market price', min_value=.01, max_value=1e14, value=1020.0, step=1.0, help='Total currency amount for the entire face value, not a quote per 100.', key='input:Bond purchase / market price')
+    price_type = widget('radio', 'Market price basis', ['Clean', 'Dirty'], horizontal=True, key='input:Market price basis')
     st.caption('Manual inputs • no live market feed')
 
 st.markdown('<div class="eyebrow">FI / ANALYTICS WORKSPACE</div>', unsafe_allow_html=True)
@@ -109,7 +110,7 @@ metrics = {
     'Remaining coupon income': (money(result['flows']['Coupon'].sum()), 'Undiscounted sum of remaining coupons; excludes reinvestment.'),
     'Redemption value': (money(face), 'Principal repaid at maturity under the bullet bond contract.'),
     'Remaining maturity': (f'{(maturity-settlement).days/365.25:.3f} yr', 'Calendar days to maturity divided by 365.25; informational, not discount time.')}
-selected_metrics = st.sidebar.multiselect('Dashboard metrics', list(metrics), default=['Clean price','Dirty price','Market YTM','DV01'])
+selected_metrics = widget('multiselect', 'Dashboard metrics', list(metrics), default=['Clean price','Dirty price','Market YTM','DV01'], key='input:Dashboard metrics',container=st.sidebar)
 for offset in range(0,len(selected_metrics),4):
     for col,name in zip(st.columns(4),selected_metrics[offset:offset+4]):
         value,help_text=metrics[name]
@@ -117,7 +118,9 @@ for offset in range(0,len(selected_metrics),4):
 st.caption(f'Model yield: {ytm:.3f}% nominal annual, compounded {frequency}× yearly. Prices are total currency amounts; model clean quote per 100 face: {result["clean"]/face*100:.4f}.')
 
 from fixed_income.workspaces import advanced
-advanced(bond, ytm/100, currency, result)
+if advanced(bond, ytm/100, currency, result):
+    workspace_download()
+    st.stop()
 
 valuation, risk, ledger, methodology = st.tabs(['VALUATION', 'RATE RISK', 'CASH-FLOW LEDGER', 'METHODOLOGY'])
 with valuation:
@@ -141,7 +144,7 @@ with risk:
     c.metric('DOLLAR DURATION', f'{currency} {result["dollar_duration"]:,.2f}')
     d.metric('CONVEXITY', f'{result["convexity"]:.4f} yr²')
     st.caption('Risk is measured at the input model YTM using dirty price. Dollar duration is currency sensitivity per 1.00 yield change; DV01/PVBP is its positive magnitude per 1 basis point.')
-    shock = st.slider('Parallel yield shock (basis points)', -500, 500, 100, 5)
+    shock = widget('slider', 'Parallel yield shock (basis points)', -500, 500, 100, 5, key='input:Parallel yield shock (basis points)')
     dy = shock/10000
     exact = bond.value(ytm/100+dy)['dirty']
     approximate = result['dirty'] * (1-result['modified']*dy+.5*result['convexity']*dy**2)
@@ -188,3 +191,5 @@ Settlement on a payment date excludes that payment and resets accrued interest t
     st.info('Analytical valuation from manual inputs. No live quotes or credit/option adjustments are included.')
 st.divider()
 st.caption('FI / BOND TERMINAL     •     DATED CASH-FLOW ENGINE     •     MANUAL MARKET INPUTS')
+
+workspace_download()

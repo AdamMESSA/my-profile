@@ -1,4 +1,5 @@
 """Advanced interactive workspaces layered onto the validated valuation terminal."""
+from fixed_income.workspace_state import widget
 from dataclasses import replace
 from datetime import timedelta
 import json
@@ -8,6 +9,8 @@ import plotly.graph_objects as go
 import streamlit as st
 from fixed_income.analytics import price_grid, risk_surface, curve_price, portfolio_values
 from fixed_income.bonds import Bond
+from fixed_income.workspace_state import editor
+from fixed_income.analytics import portfolio_risk, scenario_results, portfolio_scenarios
 from fixed_income.charts import mesh_surface, RISK_SCALE
 
 CURRENCIES = 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SGD INR BRL MXN ZAR KRW AED SAR'.split()
@@ -29,27 +32,27 @@ def surface_panel(bond, model_yield, currency):
     st.caption('Deterministic fixed-rate bullet cash flows · nominal yield = benchmark + credit spread. This additive spread model is not an option-adjusted or default model.')
     controls = st.sidebar.expander('3D surface controls', expanded=True)
     a = b = c = controls
-    benchmark = a.number_input('Initial benchmark yield (%)', value=float(model_yield*100), step=.05)/100
-    spread = b.number_input('Initial credit spread (bp)', value=0.0, step=5.0)/10000
-    quantity = c.number_input('Position quantity', min_value=.01, value=1.0)
-    mode = controls.selectbox('Surface measure', ['Dirty price','Price change (%)','Position profit/loss','Modified duration','Convexity'])
+    benchmark = widget('number_input', 'Initial benchmark yield (%)', value=float(model_yield*100), step=.05, key='input:Initial benchmark yield (%)',container=controls)/100
+    spread = widget('number_input', 'Initial credit spread (bp)', value=0.0, step=5.0, key='input:Initial credit spread (bp)',container=controls)/10000
+    quantity = widget('number_input', 'Position quantity', min_value=.01, value=1.0, key='input:Position quantity',container=controls)
+    mode = widget('selectbox', 'Surface measure', ['Dirty price','Price change (%)','Position profit/loss','Modified duration','Convexity'], key='input:Surface measure',container=controls)
     a = b = c = controls
-    xr = a.slider('Benchmark shock range (bp)', -1000,1000,(-200,200),25)
-    yr = b.slider('Spread shock range (bp)', -1000,1000,(-100,300),25)
-    resolution = c.select_slider('Surface grid resolution', [15,25,41,61,81], value=41)
+    xr = widget('slider', 'Benchmark shock range (bp)', -1000,1000,(-200,200),25, key='input:Benchmark shock range (bp)',container=controls)
+    yr = widget('slider', 'Spread shock range (bp)', -1000,1000,(-100,300),25, key='input:Spread shock range (bp)',container=controls)
+    resolution = widget('select_slider', 'Surface grid resolution', [15,25,41,61,81], value=41, key='input:Surface grid resolution',container=controls)
     if xr[0] == xr[1] or yr[0] == yr[1]:
         st.warning('Choose ranges with distinct endpoints.'); return
     x = np.linspace(*xr,resolution); y = np.linspace(*yr,resolution)
     a = b = controls
-    sx = a.slider('Selected benchmark shock (bp)', xr[0],xr[1],max(xr[0],min(0,xr[1])))
-    sy = b.slider('Selected spread shock (bp)', yr[0],yr[1],max(yr[0],min(0,yr[1])))
+    sx = widget('slider', 'Selected benchmark shock (bp)', xr[0],xr[1],max(xr[0],min(0,xr[1])), key='input:Selected benchmark shock (bp)',container=controls)
+    sy = widget('slider', 'Selected spread shock (bp)', yr[0],yr[1],max(yr[0],min(0,yr[1])), key='input:Selected spread shock (bp)',container=controls)
     base = float(price_grid(bond, benchmark+spread))
     prices = cached_surface(bond,benchmark,spread,x,y)
     selected = float(price_grid(bond, benchmark+spread+(sx+sy)/10000))
     if mode in ['Modified duration','Convexity']:
         st.caption('Hypothetical regular bonds: identical face, coupon, settlement and frequency; maturity varies in calendar days. Selected shock marker applies only to shock surfaces.')
         x = np.linspace(max(-.5,benchmark+spread-.03),benchmark+spread+.05,resolution)
-        years = controls.slider('Hypothetical maturity range (years)',1,50,(1,30))
+        years = widget('slider', 'Hypothetical maturity range (years)',1,50,(1,30), key='input:Hypothetical maturity range (years)',container=controls)
         y = np.linspace(*years,resolution)
         key = 'modified' if mode == 'Modified duration' else 'convexity'
         z = np.array([[replace(bond,maturity=bond.settlement+timedelta(days=round(t*365.25))).value(float(v))[key] for v in x] for t in y])
@@ -71,7 +74,7 @@ def surface_panel(bond, model_yield, currency):
     b.metric('SELECTED CHANGE', f'{(selected/base-1)*100:+.3f}%')
     c.metric('POSITION P/L', f'{currency} {(selected-base)*quantity:+,.2f}')
     st.download_button('Export interactive surface HTML',fig.to_html(include_plotlyjs=True),'bond_risk_surface.html','text/html')
-    contours = st.checkbox('Show heatmap contours',value=True)
+    contours = widget('checkbox', 'Show heatmap contours',value=True, key='input:Show heatmap contours',container=controls)
     heat = go.Figure(go.Heatmap(x=x,y=y,z=z,colorscale=RISK_SCALE,colorbar=dict(title=mode)))
     if contours:
         heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(coloring='none',showlabels=True),line=dict(color='#a9b2ca',width=1)))
@@ -86,7 +89,7 @@ def surface_panel(bond, model_yield, currency):
 def curve_panel(bond):
     st.subheader('Yield curves / manual observations')
     st.caption('Rates below are illustrative editable inputs, not verified market data. Only continuously compounded SPOT rates are used for discounting. Linear interpolation with flat endpoint extrapolation; no par-to-spot conversion is implied.')
-    data = st.data_editor(pd.DataFrame({'Tenor (years)':[1.,2.,3.,5.,7.,10.,15.,20.,30.], 'Spot (%)':[3.]*9,'Shock (bp)':[0.]*9}),num_rows='dynamic',key='spot_curve',hide_index=True)
+    data = editor(pd.DataFrame({'Tenor (years)':[1.,2.,3.,5.,7.,10.,15.,20.,30.], 'Spot (%)':[3.]*9,'Shock (bp)':[0.]*9}),num_rows='dynamic',key='spot_curve',hide_index=True)
     data=data.sort_values('Tenor (years)')
     t=data['Tenor (years)'].to_numpy(float); r=data['Spot (%)'].to_numpy(float)/100; shocks=data['Shock (bp)'].to_numpy(float)
     base=curve_price(bond,t,r); shocked=curve_price(bond,t,r,shocks)
@@ -109,8 +112,8 @@ def curve_panel(bond):
     st.caption('Key rate duration uses symmetric 1 bp bumps to each interpolated spot node, holding contractual cash flows fixed.')
 
 
-def portfolio_panel(bond, ytm, currency):
-    st.subheader('Portfolio / comparison laboratory')
+def portfolio_panel(bond, ytm, currency, overview=False):
+    st.subheader('Portfolio overview' if overview else 'Portfolio / comparison laboratory')
     st.caption('Manual model yields; values are exact dirty DCF prices. Quantity multiplies the entered face. Positive long positions only. FX quotes are reporting-currency units per local unit.')
     default=pd.DataFrame([{'Name':'Selected bond','Currency':currency,'Face':bond.face,'Coupon (%)':bond.coupon*100,'Maturity':bond.maturity.isoformat(),'Yield (%)':ytm*100,'Frequency':bond.frequency,'Quantity':1.,'Spread (bp)':0.}])
     uploaded=st.file_uploader('Load portfolio CSV',type=['csv'])
@@ -118,16 +121,23 @@ def portfolio_panel(bond, ytm, currency):
         default=pd.read_csv(uploaded)
         if not set(['Name','Currency','Face','Coupon (%)','Maturity','Yield (%)','Frequency','Quantity','Spread (bp)']).issubset(default.columns):
             st.error('Use the exported portfolio column format.'); return
-    rows=st.data_editor(default,num_rows='dynamic',key='positions',hide_index=True)
+        import hashlib
+        digest=hashlib.sha256(uploaded.getvalue()).hexdigest()
+        if st.session_state.get('portfolio_upload_digest') != digest:
+            st.session_state.pop('editor_base:positions',None)
+            st.session_state.pop('positions',None)
+            st.session_state['table:positions']=default.to_dict('records')
+            st.session_state['portfolio_upload_digest']=digest
+    rows=editor(default,num_rows='dynamic',key='positions',hide_index=True)
     if rows.empty: st.info('Add a position to calculate portfolio risk.'); return
-    reporting=st.selectbox('Reporting currency',CURRENCIES,index=CURRENCIES.index(currency))
-    fx_date=st.date_input('FX valuation date',bond.settlement)
-    fx_source=st.text_input('FX source / description',value='Manual user input')
+    reporting=widget('selectbox', 'Reporting currency',CURRENCIES,index=CURRENCIES.index(currency), key='input:Reporting currency')
+    fx_date=widget('date_input', 'FX valuation date',bond.settlement, key='input:FX valuation date')
+    fx_source=widget('text_input', 'FX source / description',value='Manual user input', key='input:FX source / description')
     fx={}
     for cur in sorted(set(rows.Currency)-{reporting}):
-        fx[cur]=st.number_input(f'{reporting} per 1 {cur}',min_value=0.,value=0.,format='%.6f')
+        fx[cur]=widget('number_input',f'{reporting} per 1 {cur}',min_value=0.,value=0.,format='%.6f',key=f'fx:{reporting}:{cur}')
     values=portfolio_values(rows.to_dict('records'),bond.settlement,reporting,fx)
-    table=pd.DataFrame([{k:v for k,v in p.items() if not k.startswith('_')} for p in values])
+    table=portfolio_risk(values)
     total=table.Value.sum(); weights=table.Value/total
     a,b,c,d=st.columns(4)
     a.metric('PORTFOLIO VALUE',f'{reporting} {total:,.2f}')
@@ -135,18 +145,23 @@ def portfolio_panel(bond, ytm, currency):
     c.metric('MV-WEIGHTED DURATION',f'{np.dot(weights,table.Duration):.3f} yr')
     d.metric('MV-WEIGHTED YIELD',f'{np.dot(weights,table["Yield (%)"]):.3f}%')
     st.caption('Weighted yield is a descriptive market-value average, not a portfolio IRR. All bond prices and risk use each row’s yield.')
+    st.caption('DV01 contributions sum to 100%; duration and convexity contributions sum to their market-value-weighted portfolio measures. FX rates are held fixed for rate risk.')
     st.dataframe(table,hide_index=True)
+    st.download_button('Export risk contributions',table.to_csv(index=False),'portfolio_risk.csv','text/csv')
     st.download_button('Save portfolio CSV',rows.to_csv(index=False),'portfolio.csv','text/csv')
     st.download_button('Save FX assumptions',json.dumps({'reporting':reporting,'date':str(fx_date),'source':fx_source,'rates':fx},indent=2),'fx_assumptions.json','application/json')
     fig=go.Figure(go.Pie(labels=table.Name,values=table.Value,hole=.65)); plot(fig,'Market-value composition')
+    riskfig=go.Figure(go.Bar(x=table.Name,y=table['DV01 contribution (%)']))
+    plot(riskfig,'DV01 contributions (%)')
+    if overview: return
     comparison=go.Figure()
     for p in values[:10]:
         rates=np.linspace(max(-.5,float(p['Yield (%)'])/100-.03),float(p['Yield (%)'])/100+.05,60)
         comparison.add_scatter(x=rates*100,y=price_grid(p['_bond'],rates)/p['Face']*100,name=p['Name'])
     plot(comparison,'Price–yield comparison / dirty quote per 100')
     a,b=st.columns(2)
-    shock=a.slider('Portfolio benchmark shock (bp)',-500,500,100)
-    spread=b.slider('Portfolio spread shock (bp)',-500,500,0)
+    shock=widget('slider', 'Portfolio benchmark shock (bp)',-500,500,100, key='input:Portfolio benchmark shock (bp)')
+    spread=widget('slider', 'Portfolio spread shock (bp)',-500,500,0, key='input:Portfolio spread shock (bp)')
     x=np.linspace(-300,300,31); y=np.linspace(-300,300,31); z=np.zeros((31,31)); selected=0.
     for p in values:
         base_y=float(p['Yield (%)'])/100
@@ -163,7 +178,7 @@ def portfolio_panel(bond, ytm, currency):
 
 def reinvestment_panel(bond,ytm,result,currency):
     st.subheader('Cash flows / reinvestment')
-    rate=st.slider('Annual effective reinvestment rate (%)',-20.,25.,3.,.25)/100
+    rate=widget('slider', 'Annual effective reinvestment rate (%)',-20.,25.,3.,.25, key='input:Annual effective reinvestment rate (%)')/100
     flows=result['flows'].copy()
     horizon=(bond.maturity-bond.settlement).days/365.25
     remaining=np.array([(bond.maturity-d).days/365.25 for d in flows['Payment date']])
@@ -182,18 +197,21 @@ def reinvestment_panel(bond,ytm,result,currency):
 
 def advanced(bond,ytm,currency,result):
     st.divider()
-    workspace=st.sidebar.selectbox('Advanced workspace',['3D risk simulator','Spot curves & key rate risk','Portfolio & comparison','Reinvestment','Sovereign relative value'])
-    education=st.sidebar.checkbox('Educational mode',value=False)
+    workspace=st.session_state['navigation']
+    education=widget('checkbox', 'Educational mode',value=False, key='input:Educational mode',container=st.sidebar)
     if education:
         st.info('1 bp = 0.01 percentage point. Exact DCF reprices every remaining payment. Duration is first-order yield sensitivity; convexity adds curvature. Spread shocks here change discount yields without modeling default or recovery. FX conversion requires explicit rates.')
     try:
-        if workspace=='3D risk simulator': surface_panel(bond,ytm,currency)
+        if workspace=='Valuation & cash flows': return False
+        elif workspace in ['Portfolio overview','Portfolio & comparison']: portfolio_panel(bond,ytm,currency, overview=workspace=='Portfolio overview')
+        elif workspace=='Named scenarios': scenario_panel(bond,ytm,currency)
+        elif workspace=='3D risk simulator': surface_panel(bond,ytm,currency)
         elif workspace=='Spot curves & key rate risk': curve_panel(bond)
-        elif workspace=='Portfolio & comparison': portfolio_panel(bond,ytm,currency)
         elif workspace=='Reinvestment': reinvestment_panel(bond,ytm,result,currency)
         else: sovereign_panel(bond)
     except (ValueError,TypeError,KeyError,OverflowError) as exc:
         st.error(f'Check analytical inputs: {exc}')
+    return True
 
 
 def sovereign_panel(bond):
@@ -201,8 +219,8 @@ def sovereign_panel(bond):
     st.warning('All initial yields are illustrative placeholders. Enter verified observations for market analysis. No live market feed is connected.')
     countries=['France · OAT','Germany · Bund','United States · Treasury','United Kingdom · Gilt','Italy · BTP','Spain · Bono','Japan · JGB']
     currency_map=['EUR','EUR','USD','GBP','EUR','EUR','JPY']
-    data=st.data_editor(pd.DataFrame({'Sovereign':countries,'Currency':currency_map,'Yield (%)':[3.]*7,'Coupon (%)':[3.]*7}),hide_index=True,key='sovereign_inputs')
-    term=st.slider('Sovereign comparison maturity (years)',1,30,10)
+    data=editor(pd.DataFrame({'Sovereign':countries,'Currency':currency_map,'Yield (%)':[3.]*7,'Coupon (%)':[3.]*7}),hide_index=True,key='sovereign_inputs')
+    term=widget('slider', 'Sovereign comparison maturity (years)',1,30,10, key='input:Sovereign comparison maturity (years)')
     germany=float(data.loc[1,'Yield (%)'])
     rows=[]
     for row in data.to_dict('records'):
@@ -226,3 +244,29 @@ def sovereign_panel(bond):
     fig=mesh_surface(shocks,terms,z,'OAT widening (bp)','Maturity (years)','Price change (%)')
     fig.update_layout(scene=dict(xaxis_title='OAT widening (bp)',yaxis_title='Maturity (years)',zaxis_title='Price change (%)'))
     plot(fig,'OAT spread / maturity surface')
+
+
+def scenario_panel(bond, ytm, currency):
+    st.subheader('Named scenarios')
+    st.caption('Benchmark and spread shocks are additive yield changes. Portfolio scenarios hold FX fixed; no default or recovery model is applied.')
+    scope=widget('radio','Scenario scope',['Selected bond','Saved portfolio'],key='input:Scenario scope',horizontal=True)
+    rows=editor(pd.DataFrame([
+        {'Name':'Base','Benchmark (bp)':0.,'Spread (bp)':0.},
+        {'Name':'Rates up','Benchmark (bp)':100.,'Spread (bp)':0.},
+        {'Name':'Credit stress','Benchmark (bp)':50.,'Spread (bp)':100.},
+    ]),num_rows='dynamic',key='named_scenarios',hide_index=True)
+    if scope=='Saved portfolio':
+        holdings=st.session_state.get('table:positions',[])
+        if not holdings:
+            st.info('Add holdings in Portfolio overview first.'); return
+        reporting=st.session_state.get('input:Reporting currency',currency)
+        fx={cur:st.session_state.get(f'fx:{reporting}:{cur}',0.) for cur in {p['Currency'] for p in holdings}}
+        values=portfolio_values(holdings,bond.settlement,reporting,fx)
+        table=portfolio_scenarios(values,rows.to_dict('records'))
+        currency=reporting
+        st.caption(f'Portfolio reporting currency: {reporting}. Uses saved holdings, yields and manual FX assumptions.')
+    else:
+        table=scenario_results(bond,ytm,rows.to_dict('records'))
+    st.dataframe(table,hide_index=True)
+    plot(go.Figure(go.Bar(x=table.Name,y=table['P/L'])),f'Scenario P/L ({currency})')
+    st.download_button('Export named scenarios',table.to_csv(index=False),'scenarios.csv','text/csv')

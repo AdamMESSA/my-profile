@@ -10,9 +10,9 @@ def test_terminal_and_interactions():
     assert not app.exception
     app.selectbox[2].select('ACT/360').run()
     assert not app.exception
-    app.radio[0].set_value('Years remaining').run()
+    app.radio(key='input:Maturity input').set_value('Years remaining').run()
     assert not app.exception
-    app.radio[1].set_value('Dirty').run()
+    app.radio(key='input:Market price basis').set_value('Dirty').run()
     assert not app.exception
     app.slider[0].set_value(-500).run()
     assert not app.exception

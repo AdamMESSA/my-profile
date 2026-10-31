@@ -57,3 +57,60 @@ def portfolio_values(rows, settlement, reporting, fx):
                            DV01=value['dv01']*quantity*rate, Duration=value['modified'],
                            Convexity=value['convexity'], _bond=bond, _fx=rate))
     return output
+
+
+def portfolio_risk(values):
+    """Additive reporting-currency risk and normalized contributions for long holdings."""
+    if not values:
+        raise ValueError('Add at least one position.')
+    table = pd.DataFrame([{k: v for k, v in p.items() if not k.startswith('_')} for p in values])
+    total = table.Value.sum()
+    dv01 = table.DV01.sum()
+    if not np.isfinite(total) or total <= 0:
+        raise ValueError('Portfolio value must be positive and finite.')
+    table['Weight (%)'] = table.Value / total * 100
+    table['DV01 contribution (%)'] = table.DV01 / dv01 * 100 if dv01 else 0.
+    table['Duration contribution (years)'] = table.Value / total * table.Duration
+    table['Convexity contribution (years²)'] = table.Value / total * table.Convexity
+    return table
+
+
+def scenario_results(bond, ytm, scenarios):
+    if not scenarios:
+        raise ValueError('Add at least one named scenario.')
+    names = set()
+    base = float(price_grid(bond, ytm))
+    output = []
+    for row in scenarios:
+        name = str(row['Name']).strip()
+        if not name or name in names or len(name) > 100:
+            raise ValueError('Scenario names must be unique, nonempty, and at most 100 characters.')
+        names.add(name)
+        benchmark, spread = float(row['Benchmark (bp)']), float(row['Spread (bp)'])
+        if not np.all(np.isfinite([benchmark, spread])):
+            raise ValueError('Scenario shocks must be finite.')
+        shocked = ytm + (benchmark + spread) / 10000
+        price = float(price_grid(bond, shocked))
+        output.append({'Name':name, 'Benchmark (bp)':benchmark, 'Spread (bp)':spread,
+                       'YTM (%)':shocked*100, 'Dirty price':price, 'P/L':price-base,
+                       'Change (%)':(price/base-1)*100})
+    return pd.DataFrame(output)
+
+
+def portfolio_scenarios(values, scenarios):
+    """Aggregate exact local bond repricing using unchanged explicit FX rates."""
+    if not values:
+        raise ValueError('Add portfolio holdings first.')
+    total=sum(p['Value'] for p in values)
+    result=None
+    for position in values:
+        table=scenario_results(position['_bond'],float(position['Yield (%)'])/100,scenarios)
+        scale=float(position['Quantity'])*position['_fx']
+        if result is None:
+            result=table[['Name','Benchmark (bp)','Spread (bp)']].copy()
+            result['Shocked value']=0.
+            result['P/L']=0.
+        result['Shocked value']+=table['Dirty price']*scale
+        result['P/L']+=table['P/L']*scale
+    result['Change (%)']=result['P/L']/total*100
+    return result

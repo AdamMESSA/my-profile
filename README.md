@@ -40,7 +40,9 @@ ACT/ACT ICMA uses reference coupon periods; ACT/365F and ACT/360 use actual days
 
 ## Terminal 2.0 analytical workspaces
 
-Select an **Advanced workspace** in the sidebar. The validated `Bond` engine and
+Use the dedicated **Workspace** navigation in the sidebar. Only the selected
+workspace is rendered; valuation, rate risk, the cash-flow ledger and methodology
+share the **Valuation & cash flows** destination. The validated `Bond` engine and
 its original tests are retained. New capabilities include:
 
 - Exact vectorized benchmark/spread risk surfaces, synchronized heatmaps, a
@@ -61,7 +63,41 @@ by setting coupon to zero. Expanded contractual coupon structures, stub periods,
 holiday adjustment, arbitrary frequencies, Excel import/export, portfolio short
 positions and live data are not implemented. Sovereign examples use shared model
 conventions, not country-specific security conventions. Imported portfolios must
-use the exported CSV column schema. FX assumptions export separately; re-enter
-these explicitly when loading holdings. Cross-currency yield spreads are not pure
+use the exported CSV column schema. CSV holdings exports do not include FX assumptions. Use the JSON workspace
+export below to restore holdings together with explicit FX rates and provenance. Cross-currency yield spreads are not pure
 credit spreads. Model YTM discounting and continuous-spot-curve discounting are
 separate analyses and need not produce the same valuation.
+
+## Navigation, portfolios, scenarios, and saved workspaces
+
+- **Portfolio overview** shows reporting-currency value, aggregate DV01, weighted
+  duration/yield, market-value composition and position risk contributions. Position
+  weights and DV01 shares each sum to 100%; duration and convexity contributions
+  sum to the portfolio's market-value-weighted measures. Risk amounts include
+  quantity and explicit FX conversion. Export the contribution table as CSV.
+- **Portfolio & comparison** uses the same holdings and adds comparison curves and
+  an exact portfolio shock surface. Edits persist when navigating between views.
+- **Named scenarios** lets you add, rename, and remove benchmark/spread shocks.
+  Names must be unique and nonempty. Select the current bond or saved portfolio;
+  each scenario reprices contractual cash flows exactly. Portfolio scenarios use
+  each holding's yield, quantity, and saved FX rate, holding FX constant. Input
+  yields already include credit spreads, so only scenario spread changes are added.
+- **Save workspace JSON** downloads a versioned snapshot containing instrument
+  inputs, visited workspace controls, metric selections, holdings, FX rates/date/
+  source, spot curves, sovereign observations and named scenarios. Restore it with
+  **Workspace save / restore → Restore workspace JSON**. Downloads capture the
+  current edits. Workspace files contain manual financial inputs; they do not
+  contain credentials, live market data, generated charts or valuation results.
+
+Restoring replaces the current saved inputs and tables after validating the JSON
+format, version and input types. Invalid files leave the workspace untouched.
+Controls outside their supported options/ranges revert to defaults with a warning;
+invalid analytical tables display input errors for correction. Files are limited
+to 2 MB and 1,000 rows per table. Unvisited views use their normal defaults.
+Browser refreshes/new sessions require a saved JSON file; no server-side workspace
+account or automatic disk storage is implied. CSV holdings import remains available
+and replaces the portfolio only when a new file is loaded.
+
+Tests additionally cover all navigation destinations, contribution reconciliation,
+exact single-bond and portfolio scenarios, invalid workspace rejection, atomic
+restore, restored FX and curves, and table retention across page changes.
