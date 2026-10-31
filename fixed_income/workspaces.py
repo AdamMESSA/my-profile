@@ -14,8 +14,8 @@ CURRENCIES = 'EUR USD GBP CHF JPY CAD AUD NZD SEK NOK DKK PLN CZK HUF CNY HKD SG
 
 
 def plot(fig, title):
-    fig.update_layout(template='plotly_dark', colorway=['#00bfff','#ff4da6','#9c83ff','#65d8ed'], title=title, paper_bgcolor='#050509',
-                      plot_bgcolor='#050509', font=dict(color='#c8d2e9'), height=550, margin=dict(l=20,r=20,t=60,b=30))
+    fig.update_layout(template='plotly_dark', colorway=['#0097de','#fc734d','#ffb08c','#65c9ec'], title=title, paper_bgcolor='rgba(0,0,0,0)',
+                      plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#c8d2e9'), height=550, margin=dict(l=20,r=20,t=60,b=30))
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -61,7 +61,7 @@ def surface_panel(bond, model_yield, currency):
     fig = mesh_surface(x, y, z, xlabel, ylabel, mode)
     st.caption('Scenario nodes S1–S9 sample the displayed grid. Dotted guides project values onto the floor; highlighted lines show central axis slices, not forecasts over time.')
     if point:
-        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#ff4da6',line=dict(color='#050509',width=2)),name='Selected scenario'))
+        fig.add_trace(go.Scatter3d(x=[point[0]],y=[point[1]],z=[point[2]],mode='markers',marker=dict(size=7,color='#fc734d',line=dict(color='#02070a',width=2)),name='Selected scenario'))
     if controls.button('Reset surface camera'):
         st.session_state['surface_camera_revision'] = st.session_state.get('surface_camera_revision', 0) + 1
     fig.update_layout(uirevision=f"{mode}-{st.session_state.get('surface_camera_revision', 0)}")
@@ -76,7 +76,7 @@ def surface_panel(bond, model_yield, currency):
     if contours:
         heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(coloring='none',showlabels=True),line=dict(color='#a9b2ca',width=1)))
         if np.min(z)<0<np.max(z) and mode in ['Price change (%)','Position profit/loss']:
-            heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(start=0,end=0,size=1,coloring='none'),line=dict(color='#ff4da6',width=3)))
+            heat.add_trace(go.Contour(x=x,y=y,z=z,showscale=False,contours=dict(start=0,end=0,size=1,coloring='none'),line=dict(color='#fc734d',width=3)))
     heat.update_layout(xaxis_title=xlabel,yaxis_title=ylabel)
     plot(heat,'Synchronized scenario heatmap')
     xx,yy=np.meshgrid(x,y)

@@ -13,22 +13,41 @@ from fixed_income.charts import style, cashflow_chart, MINT, BLUE
 
 st.set_page_config(page_title='FI / Bond Terminal', page_icon='◈', layout='wide')
 st.markdown('''<style>
-.stApp {background:#050509;color:#edf2ff} [data-testid="stSidebar"] {background:#0b0b13} .block-container {padding-top:2rem; max-width:1800px} button[kind="primary"] {background:#00bfff;color:#050509}
-[data-testid="stSidebar"] {border-right:1px solid #28283c}
-h1 {font-size:2.35rem!important; letter-spacing:-1.3px}
+.stApp {
+ background:radial-gradient(ellipse at 12% 8%,rgba(0,151,222,.22),transparent 52%),
+            radial-gradient(ellipse at 92% 42%,rgba(252,115,77,.13),transparent 45%),
+            linear-gradient(145deg,#02070a 10%,#071827 55%,#140f12 100%);
+ background-attachment:fixed;color:#edf2f7;
+}
+[data-testid="stHeader"] {background:rgba(2,7,10,.85)}
+[data-testid="stSidebar"] {
+ background:linear-gradient(165deg,#0b2030 0%,#061019 65%,#1b1515 100%);
+ border-right:1px solid #244253;
+}
+.block-container {padding-top:2rem;max-width:1800px}
+h1 {font-size:2.35rem!important;letter-spacing:-1.3px}
 h3 {font-size:1.15rem!important}
-[data-testid="stMetric"] {background:#10101b;border:1px solid #28283c;border-radius:8px;padding:18px}
-[data-testid="stMetricLabel"] {color:#a9b2ca;font-size:12px;letter-spacing:.6px}
-[data-testid="stMetricValue"] {color:#00bfff;font-family:monospace;font-size:1.65rem}
-.eyebrow {color:#ff4da6;font:12px monospace;letter-spacing:2px;margin-bottom:12px}
-.banner {border-top:1px solid #28283c;border-bottom:1px solid #28283c;padding:12px 0;color:#a9b2ca;font:12px monospace;margin:20px 0}
-[data-testid="stMetric"] {border-top:2px solid #00bfff}
-[data-testid="stMetric"]:hover {border-color:#ff4da6}
-button[kind="secondary"] {border-color:#35354d}
-button[kind="secondary"]:hover {border-color:#ff4da6;color:#ff4da6}
-button[role="tab"][aria-selected="true"] {color:#ff4da6}
-a {color:#00bfff}
-a:hover {color:#ff4da6}
+[data-testid="stMetric"] {
+ background:linear-gradient(135deg,rgba(12,38,55,.95),rgba(8,17,24,.95) 65%,rgba(52,29,24,.75));
+ border:1px solid #294555;border-top:2px solid #0097de;border-radius:12px;padding:18px;
+ box-shadow:0 8px 24px rgba(0,0,0,.16);
+}
+[data-testid="stMetricLabel"] {color:#b5c5d3;font-size:12px;letter-spacing:.6px}
+[data-testid="stMetricValue"] {color:#55c6fa;font-family:monospace;font-size:1.65rem}
+[data-testid="stMetric"]:hover {border-color:#fc734d}
+.eyebrow {color:#fc734d;font:12px monospace;letter-spacing:2px;margin-bottom:12px}
+.banner {border-block:1px solid #294555;padding:12px 0;color:#b5c5d3;font:12px monospace;margin:20px 0}
+[data-testid="stPlotlyChart"] {
+ background:radial-gradient(ellipse at 15% 10%,rgba(0,151,222,.13),transparent 62%),
+            radial-gradient(ellipse at 95% 90%,rgba(252,115,77,.1),transparent 52%),rgba(2,7,10,.52);
+ border:1px solid #294555;border-radius:14px;overflow:hidden;
+}
+button[kind="primary"] {background:#0097de;color:#02070a;border-color:#0097de}
+button[kind="secondary"] {background:rgba(9,27,39,.8);border-color:#355567}
+button[kind="secondary"]:hover {border-color:#fc734d;color:#fc734d}
+button[role="tab"][aria-selected="true"] {color:#fc734d}
+a {color:#55c6fa}
+a:hover {color:#fc734d}
 </style>''', unsafe_allow_html=True)
 
 with st.sidebar:
@@ -136,7 +155,7 @@ with risk:
     fig = go.Figure()
     fig.add_scatter(x=yields*100, y=prices, name='Exact repricing', line=dict(color=MINT,width=3))
     fig.add_scatter(x=yields*100, y=result['dirty']*(1-result['modified']*shifts/10000+.5*result['convexity']*(shifts/10000)**2), name='Duration + convexity', line=dict(color=BLUE,dash='dot'))
-    fig.add_scatter(x=[ytm], y=[result['dirty']], name='Model yield', mode='markers', marker=dict(color='#ff4da6',size=11))
+    fig.add_scatter(x=[ytm], y=[result['dirty']], name='Model yield', mode='markers', marker=dict(color='#fc734d',size=11))
     fig.update_xaxes(title='Nominal annual YTM (%)')
     st.plotly_chart(style(fig,'Price–yield sensitivity',f'Dirty price ({currency})'),use_container_width=True)
     shocks = np.array([-200,-100,-50,-1,0,1,50,100,200])
